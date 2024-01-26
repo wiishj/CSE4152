@@ -1,0 +1,37 @@
+1.Read and understand its function train
+Extract_speed함수와 train함수가 존재한다.
+Extract_speed함수는 이미지에서 추출한 부분의 픽셀 값을 합산하여 속도를 계산하는 단순한 데이터 처리 작업을 수행하는 함수이다.
+train함수는 모델을 훈련하는 과정을 구현했으며 데이터 로드 및 전처리, 모델 초기화, 훈련, 결과 출력 및 모델 저장의 과정으로 이루어져 있다.
+
+2.Why is it necessary to divide the data into batches?
+①효율성
+데이터를 배치로 나눠주면 작은 데이터의 부분 집합들을 한 번에 처리할 수 있기 때문에 계산과 train이 용이해진다.
+②정규화
+각 배치들을 처리한 후 모델 파라미터를 업데이트하면 최적화 과정에 노이즈를 추가하게 된다. 이 노이즈는 모델이 데이터를 더 일반화하는데 도움을 준다.
+③가속화
+현대 하드웨어(GPU와 같은 가속기)는 여러 데이터 포인트를 동시에 즉, 병렬처리할 수 있어 모델 훈련을 가속화한다.
+④지역 최솟값 방지
+Sgd와 같은 많은 최적화 알고리즘은 배치를 사용하여 기울기를 계산하고 모델 파라미터를 업데이트한다. 이로 인해서 최적화 과정에 모델을 랜덤하게 선정하는 랜덤성이 도입되며, 모델이 지역 최소값에 갇히는 것을 방지한다.
+⑤메모리 사용량 감소
+큰 데이터 셋을 한 번에 처리하는 것은 메모리를 많이 사용할 수 있다. 이를 배치로 나눠 사용하면 메모리 사용량이 줄어든다.
+
+3.What is an epoch?
+Epoch는 딥러닝에서 전체 데이터 셋(모든 batch)을 한 번 모델에 입력하고 학습 과정을 완료하는 단위를 일컫는다. 즉, 모든 데이터 셋을 보고 훈련하는 주기를 의미한다. 
+예를 들어, 1000개의 훈련 샘플이 있고 epoch가 10이고 batch size가 20인 상황을 가정해보자. 그렇다면 총 50(1000/20)개의 batch로 나눠서 훈련을 진행한 것이니 50번의 가중치가 업데이트 된다. 이때 epoch가 10이므로 이 업데이트를 10번 반복한다. 다시 말해, 각 batch가 10번씩 사용되는 것이며 결과적으로는 가중치가 총 500번 업데이트 된다.
+
+4.What do lines 69 to 77 do?
+①if (batch_idx + 1) % batch_size == 0 or batch_idx == len(batches) - 1:
+현재 data batch가 batch_size에 도달하거나 마지막 batch일 때 실행되는 조건문이다. 모델을 훈련하기 위한 조건을 설정하는 부분이라 할 수 있다
+②batch_in = torch.reshape(torch.cat(batch_in, dim=0), (-1, 96, 96, 3))
+데이터 batch의 입력을 model에 맞게 재구성하는 코드이다. 
+batch_in은 앞선 코드에서 batch의 첫번째 요소(batch[0])인 입력데이터를 추출해 받아왔다. 즉, batch_in는 입력 데이터로 구성된 list이다. 이를 torch.cat함수를 이용해 연결해주었고 torch.reshape함수를 이용해 원하는 모양인 4D tensor로 변형시켰다. 이때, (-1, 96, 96, 3)은 (B, W, H, C)를 의미하며 -1은 차원의 크기를 다른 차원의 크기에 따라 결정한다는 의미이다.
+③batch_gt = torch.reshape(torch.cat(batch_gt, dim=0), (-1,))
+실제 레이블을 모델에 맞게 재구성하는 코드이다.
+batch_gt는 앞선 코드에서 batch의 두번째 요소(batch[1])인 실제 레이블을 추출해 받아왔다. 즉, batch_gt는 실제 목표들로 구성된 list이다. 이를 torch.cat함수를 이용해 연결해주고 torch.reshape함수를 이용해 원하는 모양인 1D tensor로 변형시켰다. 
+④batch_out = infer_action(batch_in)
+모델에 입력 data인 batch_in을 전달하여 예측을 수행하는 코드이다.
+Infer_action은 모델의 forward 연산을 나타내는 함수이다.
+⑤loss = loss_function(batch_out, batch_gt)
+앞서 수행한 모델 예측(batch_out)과 실제 레이블(batch_gt)간의 loss를 계산하는 코드이다.
+ 
+전체적인 코드로 보면, data batch가 batch size에 도달하거나 last batch일 때 예측을 수행하고 loss를 계산한다.
